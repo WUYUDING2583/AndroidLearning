@@ -240,3 +240,39 @@ The system allows multiple tasks stay in memory, but if there are lots of tasks,
 
 An activity instance can be created multiple times in back stack, because an activity can be starts from different activity even from other app.
 
+### 3.3 Managing Tasks
+
+There are two ways to interrupt the normal activity launch behavior:
+
+1. Specify activity launch mode in manifest file
+2. Including intent flag when starts an activity
+
+**Intent flag's priority is higher than activity launch mode in manifest file.**
+
+#### 3.3.1 Defining Launch Mode
+
+##### 3.3.1.1 Using Manifest File
+
+When specify the activity in manifest file, you can specify `<activity>`'s `launchMode` attribute to instruct how the activity should be launched into a task.
+
+1. **standard**: ***the default mode***. When user starts the activity, the system will create a new instance of this activity and push it onto the top of the stack from which it was started. The activity can be instantiated multiple times. The activity can exist in multiple tasks, a task can contain multiple instances of this type of activity.
+
+2. **singleTop**: If the user starts the activity which is already on the top of current stack, the system will not create a new instance of it, instead, the system will route the intent to that existing instance through a call to its `onNewIntent()` method. But if the top instance is another activity, the system will instantiate a new instance of the activity. The activity can be instantiated multiple times, each instance can belongs to different tasks, one task can include multiple instances.
+
+   ![](./assets/singleTop.png)
+
+   > **Note**: if a new instance of activity comes to task, the user can press **Back** button to navigate to previous activity, but when an existing instance handles the intent, the user cannot press **Back** button to review the state before the instance receive the call on `onNewIntent()`
+
+3. ??**singleTask**: When user starts an activity that is `singleTask`, if there is no `singleTask` instance exist in current stack, the system will create a new instance just like `standard` mode.  If there is already exist an instance, then the system will route the intent through a call `onNewIntent()` of that activity and clear all activity instances on the top of that existing instance. This type of activity can only exist one instance in one stack. **Explore more on task affinity**
+
+   > **Note**: Although the system starts a new task, when user navigate back, the system still show the previous activity. 
+
+4. **singleInstance**: The system will create a new task to hold the `singleInstance` activity instance, and will not launch any other activity into the task holding the instance. The activity is always the single and only member of task. Any activity starts by it will open in a separate task.
+
+   > **Note**: This type of activity's instance is global unique.
+
+##### 3.3.1.2 Using Intent Flags
+
+1. **FLAG_ACTIVITY_NEW_TASK**: Produce same behavior as the `singleTask` launch mode.
+2. **FLAG_ACTIVITY_SINGLE_TOP**: Produce same behavior as the `singleTop` launch mode.
+3. **FLAG_ACTIVITY_CLEAR_TOP**: If the activity is already running on the current task, then that instance will comes to the top of task and all instances on the top of that instance will be destroyed and the system will route the intent to it through `onNewIntent()` method.
