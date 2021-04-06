@@ -263,9 +263,7 @@ When specify the activity in manifest file, you can specify `<activity>`'s `laun
 
    > **Note**: if a new instance of activity comes to task, the user can press **Back** button to navigate to previous activity, but when an existing instance handles the intent, the user cannot press **Back** button to review the state before the instance receive the call on `onNewIntent()`
 
-3. ??**singleTask**: When user starts an activity that is `singleTask`, if there is no `singleTask` instance exist in current stack, the system will create a new instance just like `standard` mode.  If there is already exist an instance, then the system will route the intent through a call `onNewIntent()` of that activity and clear all activity instances on the top of that existing instance. This type of activity can only exist one instance in one stack. **Explore more on task affinity**
-
-   > **Note**: Although the system starts a new task, when user navigate back, the system still show the previous activity. 
+3. **singleTask**: When user starts an activity that is `singleTask`, firstly, the system will look for a task which the activity belongs to. If there is no such a task in memory, then the system will create a new task for that activity and create an activity instance in the new task. If there is a task has affinity with the activity, and if there is no that activity instance in the task, then the system will create an activity instance in that task; if there is already exist an instance of that activity, then the system will route the intent through a call `onNewIntent()` method of that activity and clear all activity instances on the top of that existing instance. This type of activity can only exist one instance in one stack. **Explore more on task affinity**
 
 4. **singleInstance**: The system will create a new task to hold the `singleInstance` activity instance, and will not launch any other activity into the task holding the instance. The activity is always the single and only member of task. Any activity starts by it will open in a separate task.
 
@@ -273,6 +271,9 @@ When specify the activity in manifest file, you can specify `<activity>`'s `laun
 
 ##### 3.3.1.2 Using Intent Flags
 
-1. **FLAG_ACTIVITY_NEW_TASK**: Produce same behavior as the `singleTask` launch mode.
+1. **FLAG_ACTIVITY_NEW_TASK**: Produce same behavior as the `singleTask` launch mode when launch the activity, but when create instance it still follows its `launchMode` rule.
 2. **FLAG_ACTIVITY_SINGLE_TOP**: Produce same behavior as the `singleTop` launch mode.
 3. **FLAG_ACTIVITY_CLEAR_TOP**: If the activity is already running on the current task, then that instance will comes to the top of task and all instances on the top of that instance will be destroyed and the system will route the intent to it through `onNewIntent()` method.
+
+#### 3.3.2 Handling Affinities
+
