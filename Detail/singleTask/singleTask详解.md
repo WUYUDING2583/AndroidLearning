@@ -1,6 +1,6 @@
 # 1. 结论
 
-启动模式为`singleTask`的activity启动时，系统首先寻找内存中是否存在该activity所属的任务栈(task) (即在`manifest`文件中对应的`<activity>` 声明的`taskAffinity`属性值)，若存在该任务栈，则在任务栈中寻找是否已经存在该activity的实例，若存在该实例，则调用该实例的`onNewIntent()`方法并销毁任务栈中该实例之上的所有实例；若不存在该实例，则创建该实例并置于栈顶；若不存在对应的任务栈，则首先创建该任务栈，并在新建任务栈中创建该activity的实例。**一个任务栈中只能存在一个实例对象**。创建流程如图1所示。
+启动模式为`singleTask`的activity启动时，系统首先寻找内存中是否存在该activity所属的任务栈(task) (即在`manifest`文件中对应的`<activity>` 声明的`taskAffinity`属性值)，若存在该任务栈，则在任务栈中寻找是否已经存在该activity的实例，若存在该实例，则调用该实例的`onNewIntent()`方法并销毁任务栈中该实例之上的所有实例；若不存在该实例，则创建该实例并置于栈顶；若不存在对应的任务栈，则首先创建该任务栈，并在新建任务栈中创建该activity的实例。**一个任务栈中只能存在一个该activity的实例对象**。创建流程如图1所示。
 
 > 未声明`taskAffinity`时，启动模式为`singleTask`的所有的activity默认从属于同一个任务栈，即应用启动时所创建的任务栈。
 
@@ -176,7 +176,7 @@
 
 ## 2.3 使用FLAG_ACTIVITY_NEW_TASK启动
 
-使用`FLAG_ACTIVITY_NEW_TASK`启动activity时，系统通常会创建一个新的任务栈。但如果系统中已经存在该activity所属的任务栈时，该activity则会在对应任务栈中启动。
+使用`FLAG_ACTIVITY_NEW_TASK`启动activity时，系统通常会创建一个新的任务栈。但如果系统中已经存在该activity所属的任务栈时，该activity则会在对应任务栈中启动。**其启动流程与`singleTask`相同，但实例创建方式还是遵循在`Manifest`文件中声明的启动模式规则**。
 
 > 如果使用`FLAG_ACTIVITY_NEW_TASK`启动的activity所属的任务栈与启动他的activity的任务栈相同，则在同一个任务栈中创建或复用该activity的实例对象。
 
@@ -186,11 +186,11 @@
 
 ​																					图11 应用启动默认任务栈
 
-当`MainActivity`使用`FLAG_ACTIVITY_NEW_TASK`启动`MainActivity`时，由于系统已经存在`MainActivity`所属的任务栈，因此系统会在原有任务栈上创建新的`MainActivity`实例对象。再用新启动的`MainActivity`实例启动`SingleTaskActivity`时，流程同上。如图12所示：
+当`MainActivity`使用`FLAG_ACTIVITY_NEW_TASK`启动`MainActivity`时，由于系统已经存在`MainActivity`所属的任务栈且`MainActivity`的启动模式为`standard`，因此系统会在原有任务栈上创建新的`MainActivity`实例对象。再用新启动的`MainActivity`实例启动`SingleTaskActivity`时，流程同`singleTask`的启动模式相同。如图12所示：
 
 ![](./assets/singleTask_9.png)
 
-​									图12 MainActivity使用FLAG_ACTIVITY_NEW_TASK启动MainActivity
+​	图12 MainActivity使用FLAG_ACTIVITY_NEW_TASK启动MainActivity，再使用相同flag启动SingleTaskActivity
 
 其运行日志如下：
 
@@ -204,3 +204,51 @@
 2021-04-05 23:14:26.950 32604-32604/com.example.myfirstapp I/System.out: MainActivity Stop. Task Id: 43245
 ```
 
+如果在其他任务栈中启动使用`FLAT_ACTIVITY_NEW_TASK`启动`MainActivity`，且系统中不存在系统默认栈，则系统会创建一个任务栈，并在该任务栈中创建`MainActivity`的实例对象，此时在新建栈中使用`FLAT_ACTIVITY_NEW_TASK`启动`SingleTaskAffinityActivity`，系统将在当前任务栈创建`SingleTaskAffinityActivity`的实例对象。其调用流程如图13所示：
+
+![](./assets/singleTask_10.png)
+
+​								图13 其他任务栈启动MainActivity后由MainActivity启动SingleTaskActivity
+
+其运行日志如下：
+
+```java
+2021-04-06 21:22:02.796 28516-28516/com.example.myfirstapp I/System.out: SingleTaskAffinityActivity Create. Task Id: 43340
+2021-04-06 21:22:12.875 28516-28516/com.example.myfirstapp I/System.out: MainActivity start in FLAG_ACTIVITY_NEW_TASK
+2021-04-06 21:22:12.972 28516-28516/com.example.myfirstapp I/System.out: MainActivity Create. Task Id: 43341
+2021-04-06 21:22:13.471 28516-28516/com.example.myfirstapp I/System.out: SingleTaskAffinity Stop. Task Id: 43340
+2021-04-06 21:22:27.561 28516-28516/com.example.myfirstapp I/System.out: SingleTaskActivity start in FLAG_ACTIVITY_NEW_TASK
+2021-04-06 21:22:27.639 28516-28516/com.example.myfirstapp I/System.out: SingleTaskActivity Create. Task Id: 43341
+2021-04-06 21:22:28.053 28516-28516/com.example.myfirstapp I/System.out: MainActivity Stop. Task Id: 43341
+```
+
+如果默认任务栈中已存在`MainActivity`和`SingleTaskActivity`的实例对象，此时由`SingleTaskActivity`使用`FLAG_ACTIVITY_NEW_TASK`启动`MainActivity`，由于其从属于当前任务栈，因此系统在默认任务栈创建一个新的`MainActivity`的实例对象，此时由新的`MainActivity`实例对象使用`FLAG_ACTIVITY_NEW_TASK`启动`SingleTaskActivity`，由于当前任务栈中已经存在`SingleTaskActivity`的实例对象，因此系统调用该实例对象的`onNewIntent()`方法，并销毁其上所有实例对象。其调用流程如图14所示：
+
+![](./assets/singleTask_11.png)
+
+​																						图14 
+
+其运行日志如下：
+
+```java
+2021-04-06 21:37:28.301 3106-3106/com.example.myfirstapp I/System.out: MainActivity Create. Task Id: 43344
+2021-04-06 21:37:35.303 3106-3106/com.example.myfirstapp I/System.out: SingleTaskActivity Create. Task Id: 43344
+2021-04-06 21:37:35.731 3106-3106/com.example.myfirstapp I/System.out: MainActivity Stop. Task Id: 43344
+//以上为前期准备日志
+//以下为上图流程日志
+2021-04-06 21:37:39.106 3106-3106/com.example.myfirstapp I/System.out: MainActivity start in FLAG_ACTIVITY_NEW_TASK
+2021-04-06 21:37:39.180 3106-3106/com.example.myfirstapp I/System.out: MainActivity Create. Task Id: 43344
+2021-04-06 21:37:39.600 3106-3106/com.example.myfirstapp I/System.out: SingleTaskActivity Stop. Task Id: 43344
+2021-04-06 21:37:43.931 3106-3106/com.example.myfirstapp I/System.out: SingleTaskActivity start in FLAG_ACTIVITY_NEW_TASK
+2021-04-06 21:37:43.966 3106-3106/com.example.myfirstapp I/System.out: SingleTaskActivity onNewIntent. Task Id: 43344
+2021-04-06 21:37:44.368 3106-3106/com.example.myfirstapp I/System.out: MainActivity Stop. Task Id: 43344
+2021-04-06 21:37:44.369 3106-3106/com.example.myfirstapp I/System.out: MainActivity Destroy. Task Id: 43344
+```
+
+
+
+# 3. 总结
+
+1. `singleTask`启动模式的activity在同一个任务栈中只能存在一个实例对象
+2. `manifest`文件中没有声明`taskAffinity`的activity从属于同一个任务栈
+3. 使用`FLAT_ACTIVITY_NEW_TASK`启动的activity，其寻找任务栈的方式与`singleTask`模式的activity相同，但实例创建方式遵循在`manifest`声明的`launchMode`规则
