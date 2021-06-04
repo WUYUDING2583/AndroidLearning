@@ -277,3 +277,34 @@ When specify the activity in manifest file, you can specify `<activity>`'s `laun
 
 #### 3.3.2 Handling Affinities
 
+The *affinity* defines the activity prefers which task it belongs to. By default, each activity in one app has an affinity for each other. By default,all activities in one app belong to the same task. **The *package* name declared in `<manifest>` element is the default task affinity of all activities in the same app.** Activities in the same app can have different task affinity, different app's activities can share same task affinity.
+
+If we want to change an activity affinity to another task, we can declare the `taskAffinity` attribute in `<activity>` element. And the `taskAffinity` value must be unique from the package name in `<manifest>` element.
+
+The *affinity* comes to play in two circumstances:
+
+1. Start an activity with `FLAG_ACTIVITY_NEW_TASK` flag:
+
+   By default, when we start an activity, it will push onto the task belongs to the activity starts it. But when pass the `FLAG_ACTIVITY_NEW_TASK` to the intent, the system will launch a new task for that new activity. But if there is already existing the task that the activity has the affinity for, the system will use that task and push the activity instance onto that task and make that task comes into foreground.
+
+2. When an activity has it `allowTaskReparenting` attribute set to `true`:
+
+   In this case, the activity can move from the task it starts to the task it has affinity for when that task comes to the foreground.
+
+   When we start an activity that this attribute is true with another app, initially the system will push the activity onto the task it starts. But when that activity's app comes to foreground, the system will reassign the activity to that task and display within it.
+
+#### 3.3.3 Clearing the Back Stack
+
+By default, when a task stay in background for a long time, the system will clear all activities except the root activity of that task. Thus, when user comes back to that task, the task will present the initial state.
+
+1. `alwaysRetainTaskState`
+
+   When a root activity of a task set this attribute as `true`, then no matter how long user leave this task, the system will always retain the state of all activities in this task.
+
+2. `clearTaskOnLaunch`
+
+   When a root activity of a task set this attribute as `true`, then whenever user go back to the task and launch that root activity by clicking the launcher icon, the system will clear down to the root activity, that means the task will return to the initial state when user comes back. But when user go back the task by recent task, all activities still remain in task.
+
+3. `finishOnTaskLaunch`
+
+   When set a activity this attribute as `true`, then when user leave the task and comes back to the task by clicking the launcher icon, then the activity will be destroyed. But when user go back the task by recent task, the activity still presents there.
